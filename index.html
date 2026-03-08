@@ -1,0 +1,3472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>JLPT N4 단어 퀴즈</title>
+  <style>
+    :root{
+      --bg:#fff7f3; --card:#fff; --line:#f1d5c9; --text:#222; --muted:#666;
+      --accent:#f97316; --good:#16a34a; --bad:#dc2626;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:920px;margin:0 auto;padding:20px 16px calc(40px + env(safe-area-inset-bottom))}
+    h1{margin:0 0 16px;font-size:1.6rem}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .tab-btn,button,select{
+      border-radius:14px;border:1px solid var(--line);min-height:48px;font-size:1rem;
+      touch-action:manipulation;-webkit-appearance:none;appearance:none;
+    }
+    .tab-btn{background:#fff;font-weight:700;cursor:pointer}
+    .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .panel{display:none}.panel.active{display:block}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+    .row{display:grid;gap:10px}.row.controls{grid-template-columns:1fr}
+    label{display:block;font-size:.92rem;color:var(--muted);margin-bottom:6px}
+    select,button{width:100%;padding:0 12px;background:#fff}
+    button{cursor:pointer;font-weight:700}
+    .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .secondary{background:#fff;color:var(--text)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .chip{background:#fff3ed;color:var(--accent);border-radius:999px;padding:8px 12px;font-size:.9rem;font-weight:700}
+    .question-area{text-align:center;padding:14px 8px}
+    .question{font-size:2rem;font-weight:800;line-height:1.5;margin:6px 0}
+    .reading{color:var(--muted);min-height:1.6em;margin-bottom:10px}
+    .choices{display:grid;gap:10px}
+    .choice{text-align:left;padding:12px 14px}
+    .choice.correct{border-color:#bbf7d0;background:#ecfdf5;color:#166534}
+    .choice.wrong{border-color:#fecaca;background:#fef2f2;color:#991b1b}
+    .result{min-height:1.5em;margin-top:12px;font-weight:700;text-align:center}
+    .result.good{color:var(--good)} .result.bad{color:var(--bad)}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .vocab-toolbar{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}
+    .vocab-list,.wrong-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .vocab-item,.wrong-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+    .vocab-day,.wrong-day{color:var(--muted);font-size:.85rem;margin-bottom:6px}
+    .vocab-jp,.wrong-jp{font-size:1.08rem;font-weight:800;line-height:1.8}
+    .vocab-kr,.wrong-kr{color:var(--muted);margin-top:4px}
+    .section-title{font-weight:800;margin-bottom:10px}
+    .empty{color:var(--muted);text-align:center;padding:12px 0}
+    .toggle-row{display:flex;justify-content:center;align-items:center;margin-bottom:10px}
+    .toggle-label{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:.95rem;user-select:none}
+    .toggle-label input{width:18px;height:18px}
+    ruby{ruby-position:over}
+    rt{font-size:.52em;color:var(--muted)}
+    @media (min-width:700px){.row.controls{grid-template-columns:1fr 1fr 1fr 1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>JLPT N4 단어 퀴즈</h1>
+
+    <div class="tabs" style="grid-template-columns:1fr 1fr 1fr;">
+      <button class="tab-btn active" id="quizTabBtn" type="button">퀴즈</button>
+      <button class="tab-btn" id="vocabTabBtn" type="button">단어</button>
+      <button class="tab-btn" id="wrongTabBtn" type="button">오답</button>
+    </div>
+
+    <section class="panel active" id="quizPanel">
+      <div class="card">
+        <div class="row controls">
+          <div>
+            <label for="daySelect">DAY</label>
+            <select id="daySelect"></select>
+          </div>
+          <div>
+            <label for="modeSelect">형식</label>
+            <select id="modeSelect">
+              <option value="jpToKr">일본어 → 뜻</option>
+              <option value="krToJp">뜻 → 일본어</option>
+            </select>
+          </div>
+          <div>
+            <label for="countSelect">문제 수</label>
+            <select id="countSelect">
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="all">전체</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="primary" id="startBtn" type="button">시작</button>
+          </div>
+        </div>
+        <div class="chips">
+          <div class="chip" id="progressChip">0 / 0</div>
+          <div class="chip" id="scoreChip">0점</div>
+          <div class="chip" id="dayCountChip">0단어</div>
+          <div class="chip" id="wrongCountChip">오답 0개</div>
+          <div class="chip" id="wrongCountChip">오답 0개</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="question-area">
+          <div class="question" id="questionText">시작</div>
+          <div class="reading" id="readingText"></div>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle-label" for="showYomiCheckbox">
+            <input type="checkbox" id="showYomiCheckbox" />
+            <span>요미가나 보기</span>
+          </label>
+        </div>
+        <div class="choices" id="choices"></div>
+        <div class="result" id="resultText"></div>
+        <div class="actions">
+          <button class="secondary" id="nextBtn" type="button">다음</button>
+          <button class="secondary" id="revealAnswerBtn" type="button">정답 보기</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="wrongPanel">
+      <div class="card">
+        <div class="section-title">오답만 보기</div>
+        <div style="margin-bottom:12px;">
+          <button class="secondary" id="wrongTabClearBtn" type="button">오답 비우기</button>
+        </div>
+        <div class="wrong-list" id="wrongOnlyList"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="vocabPanel">
+      <div class="card">
+        <div class="vocab-toolbar">
+          <div>
+            <label for="vocabDaySelect">DAY</label>
+            <select id="vocabDaySelect"></select>
+          </div>
+        </div>
+        <div class="vocab-list" id="vocabList"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const DATA = {
+      "day01": [
+            {
+                  "jp": "あいさつ",
+                  "kr": "인사",
+                  "yomi": ""
+            },
+            {
+                  "jp": "間",
+                  "kr": "사이, 동안",
+                  "yomi": "あいだ"
+            },
+            {
+                  "jp": "会う",
+                  "kr": "만나다",
+                  "yomi": "あう"
+            },
+            {
+                  "jp": "青い",
+                  "kr": "파랗다",
+                  "yomi": "あおい"
+            },
+            {
+                  "jp": "赤い",
+                  "kr": "빨갛다",
+                  "yomi": "あかい"
+            },
+            {
+                  "jp": "明るい",
+                  "kr": "밝다",
+                  "yomi": "あかるい"
+            },
+            {
+                  "jp": "秋",
+                  "kr": "가을",
+                  "yomi": "あき"
+            },
+            {
+                  "jp": "開く",
+                  "kr": "열리다",
+                  "yomi": "あく"
+            },
+            {
+                  "jp": "空く",
+                  "kr": "비다",
+                  "yomi": "あく"
+            },
+            {
+                  "jp": "開ける",
+                  "kr": "열다",
+                  "yomi": "あける"
+            },
+            {
+                  "jp": "朝",
+                  "kr": "아침",
+                  "yomi": "あさ"
+            },
+            {
+                  "jp": "浅い",
+                  "kr": "얕다",
+                  "yomi": "あさい"
+            },
+            {
+                  "jp": "足",
+                  "kr": "발",
+                  "yomi": "あし"
+            },
+            {
+                  "jp": "味",
+                  "kr": "맛",
+                  "yomi": "あじ"
+            },
+            {
+                  "jp": "頭",
+                  "kr": "머리",
+                  "yomi": "あたま"
+            },
+            {
+                  "jp": "新しい",
+                  "kr": "새롭다",
+                  "yomi": "あたらしい"
+            },
+            {
+                  "jp": "暑い",
+                  "kr": "덥다",
+                  "yomi": "あつい"
+            },
+            {
+                  "jp": "暑さ",
+                  "kr": "더위",
+                  "yomi": "あつさ"
+            },
+            {
+                  "jp": "集まる",
+                  "kr": "모이다",
+                  "yomi": "あつまる"
+            },
+            {
+                  "jp": "兄",
+                  "kr": "형, 오빠",
+                  "yomi": "あに"
+            },
+            {
+                  "jp": "姉",
+                  "kr": "언니, 누나",
+                  "yomi": "あね"
+            },
+            {
+                  "jp": "甘い",
+                  "kr": "달다",
+                  "yomi": "あまい"
+            },
+            {
+                  "jp": "あやまる",
+                  "kr": "사과하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "洗う",
+                  "kr": "씻다",
+                  "yomi": "あらう"
+            }
+      ],
+      "day02": [
+            {
+                  "jp": "歩く",
+                  "kr": "걷다",
+                  "yomi": "あるく"
+            },
+            {
+                  "jp": "アルバイト",
+                  "kr": "아르바이트",
+                  "yomi": ""
+            },
+            {
+                  "jp": "安心",
+                  "kr": "안심",
+                  "yomi": "あんしん"
+            },
+            {
+                  "jp": "安全だ",
+                  "kr": "안전하다",
+                  "yomi": "あんぜんだ"
+            },
+            {
+                  "jp": "案内",
+                  "kr": "안내",
+                  "yomi": "あんない"
+            },
+            {
+                  "jp": "言う",
+                  "kr": "말하다",
+                  "yomi": "いう"
+            },
+            {
+                  "jp": "以下",
+                  "kr": "이하",
+                  "yomi": "いか"
+            },
+            {
+                  "jp": "以外",
+                  "kr": "이외",
+                  "yomi": "いがい"
+            },
+            {
+                  "jp": "医学",
+                  "kr": "의학",
+                  "yomi": "いがく"
+            },
+            {
+                  "jp": "行き方",
+                  "kr": "가는 방법",
+                  "yomi": "いきかた"
+            },
+            {
+                  "jp": "いくらでも",
+                  "kr": "아무리 ~해도",
+                  "yomi": ""
+            },
+            {
+                  "jp": "池",
+                  "kr": "연못",
+                  "yomi": "いけ"
+            },
+            {
+                  "jp": "意見",
+                  "kr": "의견",
+                  "yomi": "いけん"
+            },
+            {
+                  "jp": "石",
+                  "kr": "돌",
+                  "yomi": "いし"
+            },
+            {
+                  "jp": "医者",
+                  "kr": "의사",
+                  "yomi": "いしゃ"
+            },
+            {
+                  "jp": "以上",
+                  "kr": "이상",
+                  "yomi": "いじょう"
+            },
+            {
+                  "jp": "急ぐ",
+                  "kr": "서두르다",
+                  "yomi": "いそぐ"
+            },
+            {
+                  "jp": "いたす",
+                  "kr": "하다(する의 겸양어)",
+                  "yomi": ""
+            },
+            {
+                  "jp": "いただく",
+                  "kr": "받다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "一度",
+                  "kr": "한 번",
+                  "yomi": "いちど"
+            },
+            {
+                  "jp": "いっけん",
+                  "kr": "한 채",
+                  "yomi": ""
+            },
+            {
+                  "jp": "一週間",
+                  "kr": "일주일간",
+                  "yomi": "いっしゅうかん"
+            },
+            {
+                  "jp": "いっしょうけんめい",
+                  "kr": "열심히",
+                  "yomi": ""
+            },
+            {
+                  "jp": "いって まいります",
+                  "kr": "다녀오겠습니다",
+                  "yomi": ""
+            }
+      ],
+      "day03": [
+            {
+                  "jp": "糸",
+                  "kr": "실",
+                  "yomi": "いと"
+            },
+            {
+                  "jp": "以内",
+                  "kr": "이내",
+                  "yomi": "いない"
+            },
+            {
+                  "jp": "犬",
+                  "kr": "개",
+                  "yomi": "いぬ"
+            },
+            {
+                  "jp": "いる",
+                  "kr": "있다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "意味",
+                  "kr": "의미, 뜻",
+                  "yomi": "いみ"
+            },
+            {
+                  "jp": "妹",
+                  "kr": "여동생",
+                  "yomi": "いもうと"
+            },
+            {
+                  "jp": "入り口",
+                  "kr": "입구",
+                  "yomi": "いりぐち"
+            },
+            {
+                  "jp": "色",
+                  "kr": "색",
+                  "yomi": "いろ"
+            },
+            {
+                  "jp": "うえる",
+                  "kr": "심다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "うける",
+                  "kr": "(시험을) 치다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "動きだす",
+                  "kr": "움직이기 시작하다",
+                  "yomi": "うごきだす"
+            },
+            {
+                  "jp": "動く",
+                  "kr": "움직이다",
+                  "yomi": "うごく"
+            },
+            {
+                  "jp": "うすい",
+                  "kr": "얇다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "歌",
+                  "kr": "노래",
+                  "yomi": "うた"
+            },
+            {
+                  "jp": "歌う",
+                  "kr": "노래를 부르다",
+                  "yomi": "うたう"
+            },
+            {
+                  "jp": "うち",
+                  "kr": "중, 범위, 내",
+                  "yomi": ""
+            },
+            {
+                  "jp": "うつ",
+                  "kr": "치다, 부딪다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "写す",
+                  "kr": "베끼다, (사진을) 찍다",
+                  "yomi": "うつす"
+            },
+            {
+                  "jp": "うで",
+                  "kr": "팔",
+                  "yomi": ""
+            },
+            {
+                  "jp": "うまい",
+                  "kr": "솜씨가 뛰어나다, 맛있다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "生まれる",
+                  "kr": "태어나다",
+                  "yomi": "うまれる"
+            },
+            {
+                  "jp": "海",
+                  "kr": "바다",
+                  "yomi": "うみ"
+            },
+            {
+                  "jp": "うむ",
+                  "kr": "낳다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "売る",
+                  "kr": "팔다",
+                  "yomi": "うる"
+            }
+      ],
+      "day04": [
+            {
+                  "jp": "うるさい",
+                  "kr": "시끄럽다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "うれしい",
+                  "kr": "기쁘다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "売れる",
+                  "kr": "팔리다, 팔 수 있다",
+                  "yomi": "うれる"
+            },
+            {
+                  "jp": "運転",
+                  "kr": "운전",
+                  "yomi": "うんてん"
+            },
+            {
+                  "jp": "運動",
+                  "kr": "운동",
+                  "yomi": "うんどう"
+            },
+            {
+                  "jp": "映画",
+                  "kr": "영화",
+                  "yomi": "えいが"
+            },
+            {
+                  "jp": "映画館",
+                  "kr": "영화관",
+                  "yomi": "えいがかん"
+            },
+            {
+                  "jp": "営業",
+                  "kr": "영업",
+                  "yomi": "えいぎょう"
+            },
+            {
+                  "jp": "英語",
+                  "kr": "영어",
+                  "yomi": "えいご"
+            },
+            {
+                  "jp": "駅",
+                  "kr": "역",
+                  "yomi": "えき"
+            },
+            {
+                  "jp": "駅員",
+                  "kr": "역무원",
+                  "yomi": "えきいん"
+            },
+            {
+                  "jp": "エスカレーター",
+                  "kr": "에스컬레이터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "エレベーター",
+                  "kr": "엘리베이터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "お医者さん",
+                  "kr": "의사 선생님",
+                  "yomi": "おいしゃさん"
+            },
+            {
+                  "jp": "おいわい",
+                  "kr": "축하 선물",
+                  "yomi": ""
+            },
+            {
+                  "jp": "多い",
+                  "kr": "많다",
+                  "yomi": "おおい"
+            },
+            {
+                  "jp": "おおぜい",
+                  "kr": "많은 사람",
+                  "yomi": ""
+            },
+            {
+                  "jp": "おかえりなさい",
+                  "kr": "다녀오셨어요",
+                  "yomi": ""
+            },
+            {
+                  "jp": "おかげさまで",
+                  "kr": "덕분에요",
+                  "yomi": ""
+            },
+            {
+                  "jp": "起きる",
+                  "kr": "일어나다",
+                  "yomi": "おきる"
+            },
+            {
+                  "jp": "屋上",
+                  "kr": "옥상",
+                  "yomi": "おくじょう"
+            },
+            {
+                  "jp": "送る",
+                  "kr": "보내다",
+                  "yomi": "おくる"
+            },
+            {
+                  "jp": "おくれる",
+                  "kr": "늦다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "行う",
+                  "kr": "행하다",
+                  "yomi": "おこなう"
+            }
+      ],
+      "day05": [
+            {
+                  "jp": "教える",
+                  "kr": "가르치다",
+                  "yomi": "おしえる"
+            },
+            {
+                  "jp": "お正月",
+                  "kr": "양력설",
+                  "yomi": "おしょうがつ"
+            },
+            {
+                  "jp": "押す",
+                  "kr": "누르다, 밀다",
+                  "yomi": "おす"
+            },
+            {
+                  "jp": "おだいじに",
+                  "kr": "몸조리 잘하십시오",
+                  "yomi": ""
+            },
+            {
+                  "jp": "お茶",
+                  "kr": "차",
+                  "yomi": "おちゃ"
+            },
+            {
+                  "jp": "おつり",
+                  "kr": "거스름돈",
+                  "yomi": ""
+            },
+            {
+                  "jp": "音",
+                  "kr": "소리",
+                  "yomi": "おと"
+            },
+            {
+                  "jp": "弟",
+                  "kr": "남동생",
+                  "yomi": "おとうと"
+            },
+            {
+                  "jp": "おとす",
+                  "kr": "떨어뜨리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "おどろく",
+                  "kr": "놀라다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "同じだ",
+                  "kr": "같다",
+                  "yomi": "おなじだ"
+            },
+            {
+                  "jp": "お兄さん",
+                  "kr": "오빠, 형",
+                  "yomi": "おにいさん"
+            },
+            {
+                  "jp": "お姉さん",
+                  "kr": "언니, 누나",
+                  "yomi": "おねえさん"
+            },
+            {
+                  "jp": "おみまい",
+                  "kr": "병문안",
+                  "yomi": ""
+            },
+            {
+                  "jp": "おみやげ",
+                  "kr": "여행지에서 사 온 선물",
+                  "yomi": ""
+            },
+            {
+                  "jp": "重い",
+                  "kr": "무겁다",
+                  "yomi": "おもい"
+            },
+            {
+                  "jp": "思い出す",
+                  "kr": "생각해 내다",
+                  "yomi": "おもいだす"
+            },
+            {
+                  "jp": "おもいで",
+                  "kr": "추억",
+                  "yomi": ""
+            },
+            {
+                  "jp": "思う",
+                  "kr": "생각하다",
+                  "yomi": "おもう"
+            },
+            {
+                  "jp": "おもちゃ",
+                  "kr": "장난감",
+                  "yomi": ""
+            },
+            {
+                  "jp": "おや",
+                  "kr": "이런, 아니",
+                  "yomi": ""
+            },
+            {
+                  "jp": "親指",
+                  "kr": "엄지 손가락",
+                  "yomi": "おやゆび"
+            },
+            {
+                  "jp": "泳ぐ",
+                  "kr": "헤엄치다",
+                  "yomi": "およぐ"
+            },
+            {
+                  "jp": "おれい",
+                  "kr": "사례, 감사 인사",
+                  "yomi": ""
+            }
+      ],
+      "day06": [
+            {
+                  "jp": "おれる",
+                  "kr": "부러지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "終わる",
+                  "kr": "끝나다",
+                  "yomi": "おわる"
+            },
+            {
+                  "jp": "音楽",
+                  "kr": "음악",
+                  "yomi": "おんがく"
+            },
+            {
+                  "jp": "会社",
+                  "kr": "회사",
+                  "yomi": "かいしゃ"
+            },
+            {
+                  "jp": "会場",
+                  "kr": "회장",
+                  "yomi": "かいじょう"
+            },
+            {
+                  "jp": "会話",
+                  "kr": "회화",
+                  "yomi": "かいわ"
+            },
+            {
+                  "jp": "買う",
+                  "kr": "사다",
+                  "yomi": "かう"
+            },
+            {
+                  "jp": "返す",
+                  "kr": "반환하다",
+                  "yomi": "かえす"
+            },
+            {
+                  "jp": "帰り",
+                  "kr": "귀갓길",
+                  "yomi": "かえり"
+            },
+            {
+                  "jp": "帰る",
+                  "kr": "돌아가다",
+                  "yomi": "かえる"
+            },
+            {
+                  "jp": "顔",
+                  "kr": "얼굴",
+                  "yomi": "かお"
+            },
+            {
+                  "jp": "かがみ",
+                  "kr": "거울",
+                  "yomi": ""
+            },
+            {
+                  "jp": "書き方",
+                  "kr": "쓰는 법",
+                  "yomi": "かきかた"
+            },
+            {
+                  "jp": "かける",
+                  "kr": "걸다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "かざる",
+                  "kr": "장식하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "火事",
+                  "kr": "화재",
+                  "yomi": "かじ"
+            },
+            {
+                  "jp": "かしこまりました",
+                  "kr": "알겠습니다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "貸す",
+                  "kr": "빌려주다",
+                  "yomi": "かす"
+            },
+            {
+                  "jp": "風",
+                  "kr": "바람",
+                  "yomi": "かぜ"
+            },
+            {
+                  "jp": "数える",
+                  "kr": "세다",
+                  "yomi": "かぞえる"
+            },
+            {
+                  "jp": "家族",
+                  "kr": "가족",
+                  "yomi": "かぞく"
+            },
+            {
+                  "jp": "ガソリンスタンド",
+                  "kr": "주유소",
+                  "yomi": ""
+            },
+            {
+                  "jp": "方",
+                  "kr": "분",
+                  "yomi": "かた"
+            },
+            {
+                  "jp": "かたい",
+                  "kr": "딱딱하다",
+                  "yomi": ""
+            }
+      ],
+      "day07": [
+            {
+                  "jp": "かたづける",
+                  "kr": "정리하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "カッター",
+                  "kr": "커터칼",
+                  "yomi": ""
+            },
+            {
+                  "jp": "かなしい",
+                  "kr": "슬프다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "かならず",
+                  "kr": "반드시",
+                  "yomi": ""
+            },
+            {
+                  "jp": "かべ",
+                  "kr": "벽",
+                  "yomi": ""
+            },
+            {
+                  "jp": "かまいません",
+                  "kr": "상관없습니다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "紙",
+                  "kr": "종이",
+                  "yomi": "かみ"
+            },
+            {
+                  "jp": "かむ",
+                  "kr": "씹다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "通う",
+                  "kr": "다니다",
+                  "yomi": "かよう"
+            },
+            {
+                  "jp": "体",
+                  "kr": "몸",
+                  "yomi": "からだ"
+            },
+            {
+                  "jp": "借りる",
+                  "kr": "빌리다",
+                  "yomi": "かりる"
+            },
+            {
+                  "jp": "軽い",
+                  "kr": "가볍다",
+                  "yomi": "かるい"
+            },
+            {
+                  "jp": "かわく",
+                  "kr": "마르다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "代わり",
+                  "kr": "대신",
+                  "yomi": "かわり"
+            },
+            {
+                  "jp": "考え方",
+                  "kr": "사고방식",
+                  "yomi": "かんがえかた"
+            },
+            {
+                  "jp": "考える",
+                  "kr": "생각하다",
+                  "yomi": "かんがえる"
+            },
+            {
+                  "jp": "かんけい",
+                  "kr": "관계",
+                  "yomi": ""
+            },
+            {
+                  "jp": "漢字",
+                  "kr": "한자",
+                  "yomi": "かんじ"
+            },
+            {
+                  "jp": "きかい",
+                  "kr": "기회",
+                  "yomi": ""
+            },
+            {
+                  "jp": "きけんだ",
+                  "kr": "위험하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "帰国",
+                  "kr": "귀국",
+                  "yomi": "きこく"
+            },
+            {
+                  "jp": "ぎじゅつ",
+                  "kr": "기술",
+                  "yomi": ""
+            },
+            {
+                  "jp": "きせつ",
+                  "kr": "계절",
+                  "yomi": ""
+            },
+            {
+                  "jp": "きそく",
+                  "kr": "규칙",
+                  "yomi": ""
+            }
+      ],
+      "day08": [
+            {
+                  "jp": "北区",
+                  "kr": "기타구(지명)",
+                  "yomi": "きたく"
+            },
+            {
+                  "jp": "切手",
+                  "kr": "우표",
+                  "yomi": "きって"
+            },
+            {
+                  "jp": "きびしい",
+                  "kr": "엄하다, 엄격하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "気分",
+                  "kr": "기분",
+                  "yomi": "きぶん"
+            },
+            {
+                  "jp": "決まる",
+                  "kr": "결정되다",
+                  "yomi": "きまる"
+            },
+            {
+                  "jp": "着物",
+                  "kr": "옷, 일본 옷",
+                  "yomi": "きもの"
+            },
+            {
+                  "jp": "急行",
+                  "kr": "급행",
+                  "yomi": "きゅうこう"
+            },
+            {
+                  "jp": "急に",
+                  "kr": "급히, 갑자기",
+                  "yomi": "きゅうに"
+            },
+            {
+                  "jp": "牛肉",
+                  "kr": "소고기",
+                  "yomi": "ぎゅうにく"
+            },
+            {
+                  "jp": "教室",
+                  "kr": "교실",
+                  "yomi": "きょうしつ"
+            },
+            {
+                  "jp": "きょうそう",
+                  "kr": "경쟁",
+                  "yomi": ""
+            },
+            {
+                  "jp": "きょうみ",
+                  "kr": "흥미",
+                  "yomi": ""
+            },
+            {
+                  "jp": "去年",
+                  "kr": "작년",
+                  "yomi": "きょねん"
+            },
+            {
+                  "jp": "銀色",
+                  "kr": "은색",
+                  "yomi": "ぎんいろ"
+            },
+            {
+                  "jp": "銀行",
+                  "kr": "은행",
+                  "yomi": "ぎんこう"
+            },
+            {
+                  "jp": "近所",
+                  "kr": "근처",
+                  "yomi": "きんじょ"
+            },
+            {
+                  "jp": "ぐあい",
+                  "kr": "상태",
+                  "yomi": ""
+            },
+            {
+                  "jp": "空港",
+                  "kr": "공항",
+                  "yomi": "くうこう"
+            },
+            {
+                  "jp": "薬",
+                  "kr": "약",
+                  "yomi": "くすり"
+            },
+            {
+                  "jp": "くださる",
+                  "kr": "주시다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "首",
+                  "kr": "목",
+                  "yomi": "くび"
+            },
+            {
+                  "jp": "雲",
+                  "kr": "구름",
+                  "yomi": "くも"
+            },
+            {
+                  "jp": "暗い",
+                  "kr": "어둡다",
+                  "yomi": "くらい"
+            },
+            {
+                  "jp": "くらべる",
+                  "kr": "비교하다",
+                  "yomi": ""
+            }
+      ],
+      "day09": [
+            {
+                  "jp": "来る",
+                  "kr": "오다",
+                  "yomi": "くる"
+            },
+            {
+                  "jp": "黒い",
+                  "kr": "검다",
+                  "yomi": "くろい"
+            },
+            {
+                  "jp": "計画",
+                  "kr": "계획",
+                  "yomi": "けいかく"
+            },
+            {
+                  "jp": "経験",
+                  "kr": "경험",
+                  "yomi": "けいけん"
+            },
+            {
+                  "jp": "ゲーム",
+                  "kr": "게임",
+                  "yomi": ""
+            },
+            {
+                  "jp": "けが",
+                  "kr": "상처",
+                  "yomi": ""
+            },
+            {
+                  "jp": "今朝",
+                  "kr": "오늘 아침",
+                  "yomi": "けさ"
+            },
+            {
+                  "jp": "けしき",
+                  "kr": "경치",
+                  "yomi": ""
+            },
+            {
+                  "jp": "けっか",
+                  "kr": "결과",
+                  "yomi": ""
+            },
+            {
+                  "jp": "けっこうだ",
+                  "kr": "괜찮다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "月曜日",
+                  "kr": "월요일",
+                  "yomi": "げつようび"
+            },
+            {
+                  "jp": "県",
+                  "kr": "현(일본 행정구역)",
+                  "yomi": "けん"
+            },
+            {
+                  "jp": "げんいん",
+                  "kr": "원인",
+                  "yomi": ""
+            },
+            {
+                  "jp": "けんか",
+                  "kr": "싸움",
+                  "yomi": ""
+            },
+            {
+                  "jp": "けんがく",
+                  "kr": "견학",
+                  "yomi": ""
+            },
+            {
+                  "jp": "げんき",
+                  "kr": "건강함",
+                  "yomi": ""
+            },
+            {
+                  "jp": "研究",
+                  "kr": "연구",
+                  "yomi": "けんきゅう"
+            },
+            {
+                  "jp": "研究会",
+                  "kr": "연구회",
+                  "yomi": "けんきゅうか"
+            },
+            {
+                  "jp": "公園",
+                  "kr": "공원",
+                  "yomi": "こうえん"
+            },
+            {
+                  "jp": "こうがい",
+                  "kr": "교외",
+                  "yomi": ""
+            },
+            {
+                  "jp": "工業",
+                  "kr": "공업",
+                  "yomi": "こうぎょう"
+            },
+            {
+                  "jp": "こうじ",
+                  "kr": "공사",
+                  "yomi": ""
+            },
+            {
+                  "jp": "工場",
+                  "kr": "공장",
+                  "yomi": "こうじょう"
+            },
+            {
+                  "jp": "校長",
+                  "kr": "교장(선생님)",
+                  "yomi": "こうちょう"
+            }
+      ],
+      "day10": [
+            {
+                  "jp": "交通",
+                  "kr": "교통",
+                  "yomi": "こうつう"
+            },
+            {
+                  "jp": "声",
+                  "kr": "(목)소리",
+                  "yomi": "こえ"
+            },
+            {
+                  "jp": "氷",
+                  "kr": "얼음",
+                  "yomi": "こおり"
+            },
+            {
+                  "jp": "こころ",
+                  "kr": "마음",
+                  "yomi": ""
+            },
+            {
+                  "jp": "こしょう",
+                  "kr": "고장",
+                  "yomi": ""
+            },
+            {
+                  "jp": "答える",
+                  "kr": "대답하다",
+                  "yomi": "こたえる"
+            },
+            {
+                  "jp": "小鳥",
+                  "kr": "작은 새",
+                  "yomi": "ことり"
+            },
+            {
+                  "jp": "こまかい",
+                  "kr": "잘다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "こむ",
+                  "kr": "붐비다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "こられる",
+                  "kr": "올 수 있다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "こわい",
+                  "kr": "무섭다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "こわれる",
+                  "kr": "망가지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "今度",
+                  "kr": "이번, 다음",
+                  "yomi": "こんど"
+            },
+            {
+                  "jp": "さいきん",
+                  "kr": "최근",
+                  "yomi": ""
+            },
+            {
+                  "jp": "最後",
+                  "kr": "최후, 마지막",
+                  "yomi": "さいご"
+            },
+            {
+                  "jp": "さか",
+                  "kr": "언덕",
+                  "yomi": ""
+            },
+            {
+                  "jp": "さがす",
+                  "kr": "찾다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "魚",
+                  "kr": "물고기, 생선",
+                  "yomi": "さかな"
+            },
+            {
+                  "jp": "さかんだ",
+                  "kr": "성행하다, 번성하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "作文",
+                  "kr": "작문",
+                  "yomi": "さくぶん"
+            },
+            {
+                  "jp": "さしあげる",
+                  "kr": "드리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "さす",
+                  "kr": "(우산을) 쓰다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "さそう",
+                  "kr": "권하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "さっき",
+                  "kr": "조금 전",
+                  "yomi": ""
+            }
+      ],
+      "day11": [
+            {
+                  "jp": "さびしい",
+                  "kr": "쓸쓸하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "寒い",
+                  "kr": "춥다",
+                  "yomi": "さむい"
+            },
+            {
+                  "jp": "皿",
+                  "kr": "접시",
+                  "yomi": "さら"
+            },
+            {
+                  "jp": "さわる",
+                  "kr": "만지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "産業",
+                  "kr": "산업",
+                  "yomi": "さんぎょう"
+            },
+            {
+                  "jp": "サンダル",
+                  "kr": "샌들",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ざんねんだ",
+                  "kr": "유감이다, 아쉽다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "試合",
+                  "kr": "시합",
+                  "yomi": "しあい"
+            },
+            {
+                  "jp": "しかれる",
+                  "kr": "야단을 맞다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しかる",
+                  "kr": "야단치다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "仕事",
+                  "kr": "일, 작업",
+                  "yomi": "しごと"
+            },
+            {
+                  "jp": "辞書",
+                  "kr": "사전",
+                  "yomi": "じしょ"
+            },
+            {
+                  "jp": "したい",
+                  "kr": "하고 싶다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "時代",
+                  "kr": "시대",
+                  "yomi": "じだい"
+            },
+            {
+                  "jp": "したく",
+                  "kr": "준비, 채비",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しっかり",
+                  "kr": "건실함, 야무짐, 확실히",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しっぱい",
+                  "kr": "실패",
+                  "yomi": ""
+            },
+            {
+                  "jp": "質問",
+                  "kr": "질문",
+                  "yomi": "しつもん"
+            },
+            {
+                  "jp": "しつれいだ",
+                  "kr": "무례하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "自転車",
+                  "kr": "자전거",
+                  "yomi": "じてんしゃ"
+            },
+            {
+                  "jp": "自動車",
+                  "kr": "자동차",
+                  "yomi": "じどうしゃ"
+            },
+            {
+                  "jp": "品物",
+                  "kr": "물건",
+                  "yomi": "しなもの"
+            },
+            {
+                  "jp": "死ぬ",
+                  "kr": "죽다",
+                  "yomi": "しぬ"
+            },
+            {
+                  "jp": "しばらく",
+                  "kr": "잠시",
+                  "yomi": ""
+            }
+      ],
+      "day12": [
+            {
+                  "jp": "自分",
+                  "kr": "자기, 자신",
+                  "yomi": "じぶん"
+            },
+            {
+                  "jp": "市民",
+                  "kr": "시민",
+                  "yomi": "しみん"
+            },
+            {
+                  "jp": "閉める",
+                  "kr": "닫다",
+                  "yomi": "しめる"
+            },
+            {
+                  "jp": "社会",
+                  "kr": "사회",
+                  "yomi": "しゃかい"
+            },
+            {
+                  "jp": "写真",
+                  "kr": "사진",
+                  "yomi": "しゃしん"
+            },
+            {
+                  "jp": "写真家",
+                  "kr": "사진가",
+                  "yomi": "しゃしんか"
+            },
+            {
+                  "jp": "社長",
+                  "kr": "사장",
+                  "yomi": "しゃちょう"
+            },
+            {
+                  "jp": "じゃま",
+                  "kr": "방해",
+                  "yomi": ""
+            },
+            {
+                  "jp": "じゃまに なる",
+                  "kr": "방해가 되다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しゅうかん",
+                  "kr": "습관",
+                  "yomi": ""
+            },
+            {
+                  "jp": "住所",
+                  "kr": "주소",
+                  "yomi": "じゅうしょ"
+            },
+            {
+                  "jp": "十分",
+                  "kr": "충분히",
+                  "yomi": "じゅうぶん"
+            },
+            {
+                  "jp": "授業",
+                  "kr": "수업",
+                  "yomi": "じゅぎょよう"
+            },
+            {
+                  "jp": "主人",
+                  "kr": "남편, 주인",
+                  "yomi": "しゅじん"
+            },
+            {
+                  "jp": "出席",
+                  "kr": "출석, 참석",
+                  "yomi": "しゅっせき"
+            },
+            {
+                  "jp": "出発",
+                  "kr": "출발",
+                  "yomi": "しゅっぱつ"
+            },
+            {
+                  "jp": "じゅんび",
+                  "kr": "준비",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しょうかい",
+                  "kr": "소개",
+                  "yomi": ""
+            },
+            {
+                  "jp": "小説",
+                  "kr": "소설",
+                  "yomi": "しょうせつ"
+            },
+            {
+                  "jp": "しょうたい",
+                  "kr": "초대",
+                  "yomi": ""
+            },
+            {
+                  "jp": "しょうらい",
+                  "kr": "장래, 미래",
+                  "yomi": ""
+            },
+            {
+                  "jp": "食事",
+                  "kr": "식사",
+                  "yomi": "しょくじ"
+            },
+            {
+                  "jp": "食堂",
+                  "kr": "식당",
+                  "yomi": "しょくどう"
+            },
+            {
+                  "jp": "食料品",
+                  "kr": "식료품",
+                  "yomi": "しょくりょよう"
+            }
+      ],
+      "day13": [
+            {
+                  "jp": "女性",
+                  "kr": "여성",
+                  "yomi": "じょせい"
+            },
+            {
+                  "jp": "調べる",
+                  "kr": "조사하다",
+                  "yomi": "しらべる"
+            },
+            {
+                  "jp": "知る",
+                  "kr": "알다",
+                  "yomi": "しる"
+            },
+            {
+                  "jp": "白い",
+                  "kr": "하얗다, 희다",
+                  "yomi": "しろい"
+            },
+            {
+                  "jp": "人口",
+                  "kr": "인구",
+                  "yomi": "じんこう"
+            },
+            {
+                  "jp": "親切だ",
+                  "kr": "친절하다",
+                  "yomi": "しんせつだ"
+            },
+            {
+                  "jp": "しんぱい",
+                  "kr": "걱정",
+                  "yomi": ""
+            },
+            {
+                  "jp": "新聞社",
+                  "kr": "신문사",
+                  "yomi": "しんぶんしゃ"
+            },
+            {
+                  "jp": "スイッチ",
+                  "kr": "스위치",
+                  "yomi": ""
+            },
+            {
+                  "jp": "水道",
+                  "kr": "수도",
+                  "yomi": "すいどう"
+            },
+            {
+                  "jp": "好きだ",
+                  "kr": "좋아하다",
+                  "yomi": "すきだ"
+            },
+            {
+                  "jp": "少し",
+                  "kr": "조금",
+                  "yomi": "すこし"
+            },
+            {
+                  "jp": "進む",
+                  "kr": "진행되다",
+                  "yomi": "すすむ"
+            },
+            {
+                  "jp": "すっかり",
+                  "kr": "죄다, 모두",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ずっと",
+                  "kr": "쭉, 줄곧",
+                  "yomi": ""
+            },
+            {
+                  "jp": "すてる",
+                  "kr": "버리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "すべる",
+                  "kr": "미끄러지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "すみ",
+                  "kr": "구석",
+                  "yomi": ""
+            },
+            {
+                  "jp": "住む",
+                  "kr": "살다",
+                  "yomi": "すむ"
+            },
+            {
+                  "jp": "すると",
+                  "kr": "그러자",
+                  "yomi": ""
+            },
+            {
+                  "jp": "～制",
+                  "kr": "~제",
+                  "yomi": "んせい"
+            },
+            {
+                  "jp": "生産",
+                  "kr": "생산",
+                  "yomi": "せいさん"
+            },
+            {
+                  "jp": "西洋",
+                  "kr": "서양",
+                  "yomi": "せいよう"
+            }
+      ],
+      "day14": [
+            {
+                  "jp": "世界",
+                  "kr": "세계",
+                  "yomi": "せかい"
+            },
+            {
+                  "jp": "席",
+                  "kr": "자리",
+                  "yomi": "せき"
+            },
+            {
+                  "jp": "説明",
+                  "kr": "설명",
+                  "yomi": "せつめい"
+            },
+            {
+                  "jp": "ぜひ",
+                  "kr": "꼭",
+                  "yomi": ""
+            },
+            {
+                  "jp": "せまい",
+                  "kr": "좁다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "世話",
+                  "kr": "도와줌, 보살핌",
+                  "yomi": "せわ"
+            },
+            {
+                  "jp": "先週",
+                  "kr": "지난주",
+                  "yomi": "せんしゅう"
+            },
+            {
+                  "jp": "せんたく",
+                  "kr": "세탁, 빨래",
+                  "yomi": ""
+            },
+            {
+                  "jp": "センチ",
+                  "kr": "센티미터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "そうだんする",
+                  "kr": "상담하다, 의논하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "そだてる",
+                  "kr": "키우다, 기르다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "祖母",
+                  "kr": "조모, 할머니",
+                  "yomi": "そぼ"
+            },
+            {
+                  "jp": "空",
+                  "kr": "하늘",
+                  "yomi": "そら"
+            },
+            {
+                  "jp": "それに",
+                  "kr": "게다가",
+                  "yomi": ""
+            },
+            {
+                  "jp": "それほどでも ない",
+                  "kr": "그렇지도 않다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "そろそろ",
+                  "kr": "슬슬",
+                  "yomi": ""
+            },
+            {
+                  "jp": "大使",
+                  "kr": "대사",
+                  "yomi": "たいし"
+            },
+            {
+                  "jp": "大使館",
+                  "kr": "대사관",
+                  "yomi": "たいしかん"
+            },
+            {
+                  "jp": "大事だ",
+                  "kr": "소중하다, 중요하다",
+                  "yomi": "だいじだ"
+            },
+            {
+                  "jp": "だいじょうぶだ",
+                  "kr": "괜찮다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "大切だ",
+                  "kr": "중요하다",
+                  "yomi": "たいせつだ"
+            },
+            {
+                  "jp": "たいてい",
+                  "kr": "대부분, 대개, 대체로",
+                  "yomi": ""
+            },
+            {
+                  "jp": "台所",
+                  "kr": "부엌",
+                  "yomi": "だいどころ"
+            },
+            {
+                  "jp": "台風",
+                  "kr": "태풍",
+                  "yomi": "たいふう"
+            }
+      ],
+      "day15": [
+            {
+                  "jp": "たおれる",
+                  "kr": "쓰러지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "たかい",
+                  "kr": "비싸다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "だから",
+                  "kr": "그러니까, 그래서",
+                  "yomi": ""
+            },
+            {
+                  "jp": "たしかだ",
+                  "kr": "분명하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "たす",
+                  "kr": "더하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "だす",
+                  "kr": "내다, 제출하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "正しい",
+                  "kr": "바르다, 옳다",
+                  "yomi": "ただしい"
+            },
+            {
+                  "jp": "立つ",
+                  "kr": "서다",
+                  "yomi": "たつ"
+            },
+            {
+                  "jp": "建物",
+                  "kr": "건물",
+                  "yomi": "たてもの"
+            },
+            {
+                  "jp": "建てる",
+                  "kr": "세우다",
+                  "yomi": "たてる"
+            },
+            {
+                  "jp": "楽しい",
+                  "kr": "즐겁다",
+                  "yomi": "たのしい"
+            },
+            {
+                  "jp": "たのむ",
+                  "kr": "부탁하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "たまに",
+                  "kr": "이따금",
+                  "yomi": ""
+            },
+            {
+                  "jp": "だめ",
+                  "kr": "안 됨, 불가능함",
+                  "yomi": ""
+            },
+            {
+                  "jp": "足りない",
+                  "kr": "모자르다, 부족하다",
+                  "yomi": "たりない"
+            },
+            {
+                  "jp": "足りる",
+                  "kr": "충분하다",
+                  "yomi": "たりる"
+            },
+            {
+                  "jp": "だんぼう",
+                  "kr": "난방",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ちいさい",
+                  "kr": "작다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "チェック",
+                  "kr": "체크",
+                  "yomi": ""
+            },
+            {
+                  "jp": "近い",
+                  "kr": "가깝다",
+                  "yomi": "ちかい"
+            },
+            {
+                  "jp": "近く",
+                  "kr": "근처",
+                  "yomi": "ちかく"
+            },
+            {
+                  "jp": "地下鉄",
+                  "kr": "지하철",
+                  "yomi": "ちかてつ"
+            },
+            {
+                  "jp": "力",
+                  "kr": "힘",
+                  "yomi": "ちから"
+            },
+            {
+                  "jp": "チケット",
+                  "kr": "티켓",
+                  "yomi": ""
+            }
+      ],
+      "day16": [
+            {
+                  "jp": "ちこく",
+                  "kr": "지각",
+                  "yomi": ""
+            },
+            {
+                  "jp": "地図",
+                  "kr": "지도",
+                  "yomi": "ちず"
+            },
+            {
+                  "jp": "茶色",
+                  "kr": "갈색",
+                  "yomi": "ちゃいろ"
+            },
+            {
+                  "jp": "チャンス",
+                  "kr": "찬스, 기회",
+                  "yomi": ""
+            },
+            {
+                  "jp": "注意",
+                  "kr": "주의",
+                  "yomi": "ちゅうい"
+            },
+            {
+                  "jp": "中止",
+                  "kr": "중지",
+                  "yomi": "ちゅうし"
+            },
+            {
+                  "jp": "ちょきん",
+                  "kr": "저금",
+                  "yomi": ""
+            },
+            {
+                  "jp": "地理",
+                  "kr": "지리",
+                  "yomi": "ちり"
+            },
+            {
+                  "jp": "使う",
+                  "kr": "사용하다",
+                  "yomi": "つかう"
+            },
+            {
+                  "jp": "着く",
+                  "kr": "도착하다",
+                  "yomi": "つく"
+            },
+            {
+                  "jp": "机",
+                  "kr": "책상",
+                  "yomi": "つくえ"
+            },
+            {
+                  "jp": "作る",
+                  "kr": "만들다",
+                  "yomi": "つくる"
+            },
+            {
+                  "jp": "都合",
+                  "kr": "사정, 형편",
+                  "yomi": "つごう"
+            },
+            {
+                  "jp": "つごうが わるい",
+                  "kr": "형편이 좋지 않다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "つたえる",
+                  "kr": "전하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "つつむ",
+                  "kr": "싸다, 포장하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "強い",
+                  "kr": "강하다",
+                  "yomi": "つよい"
+            },
+            {
+                  "jp": "ていねいだ",
+                  "kr": "정중하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "手紙",
+                  "kr": "편지",
+                  "yomi": "てがみ"
+            },
+            {
+                  "jp": "てきとう",
+                  "kr": "적당함",
+                  "yomi": ""
+            },
+            {
+                  "jp": "出口",
+                  "kr": "출구",
+                  "yomi": "でぐち"
+            },
+            {
+                  "jp": "出る",
+                  "kr": "나가다",
+                  "yomi": "でる"
+            },
+            {
+                  "jp": "店員",
+                  "kr": "점원",
+                  "yomi": "てんいん"
+            }
+      ],
+      "day17": [
+            {
+                  "jp": "電話代",
+                  "kr": "전화 요금",
+                  "yomi": "でんわだい"
+            },
+            {
+                  "jp": "～度",
+                  "kr": "~번",
+                  "yomi": "てど"
+            },
+            {
+                  "jp": "とうとう",
+                  "kr": "드디어",
+                  "yomi": ""
+            },
+            {
+                  "jp": "動物",
+                  "kr": "동물",
+                  "yomi": "どうぶつ"
+            },
+            {
+                  "jp": "遠い",
+                  "kr": "멀다",
+                  "yomi": "とおい"
+            },
+            {
+                  "jp": "遠く",
+                  "kr": "멀리",
+                  "yomi": "とおく"
+            },
+            {
+                  "jp": "通り",
+                  "kr": "길",
+                  "yomi": "とおり"
+            },
+            {
+                  "jp": "通る",
+                  "kr": "지나다",
+                  "yomi": "とおる"
+            },
+            {
+                  "jp": "都会",
+                  "kr": "도시",
+                  "yomi": "とかい"
+            },
+            {
+                  "jp": "特に",
+                  "kr": "특히",
+                  "yomi": "とくに"
+            },
+            {
+                  "jp": "特別だ",
+                  "kr": "특별하다",
+                  "yomi": "とくべつだ"
+            },
+            {
+                  "jp": "時計",
+                  "kr": "시계",
+                  "yomi": "とけい"
+            },
+            {
+                  "jp": "図書館",
+                  "kr": "도서관",
+                  "yomi": "としょかん"
+            },
+            {
+                  "jp": "閉じる",
+                  "kr": "닫다",
+                  "yomi": "とじる"
+            },
+            {
+                  "jp": "とちゅう",
+                  "kr": "도중",
+                  "yomi": ""
+            },
+            {
+                  "jp": "特急",
+                  "kr": "특급",
+                  "yomi": "とっきゅう"
+            },
+            {
+                  "jp": "止まる",
+                  "kr": "멈추다",
+                  "yomi": "とまる"
+            },
+            {
+                  "jp": "とめる",
+                  "kr": "멈추다, 세우다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "土曜日",
+                  "kr": "토요일",
+                  "yomi": "どようび"
+            },
+            {
+                  "jp": "鳥",
+                  "kr": "새",
+                  "yomi": "とり"
+            },
+            {
+                  "jp": "とりかえる",
+                  "kr": "바꾸다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "どんどん",
+                  "kr": "점차, 계속",
+                  "yomi": ""
+            },
+            {
+                  "jp": "なおす",
+                  "kr": "고치다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "なおる",
+                  "kr": "회복되다, 복구되다",
+                  "yomi": ""
+            }
+      ],
+      "day18": [
+            {
+                  "jp": "夏",
+                  "kr": "여름",
+                  "yomi": "なつ"
+            },
+            {
+                  "jp": "習う",
+                  "kr": "배우다",
+                  "yomi": "ならう"
+            },
+            {
+                  "jp": "なる",
+                  "kr": "울리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "なるべく",
+                  "kr": "가급적, 되도록",
+                  "yomi": ""
+            },
+            {
+                  "jp": "なれる",
+                  "kr": "익숙해지다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "何度も",
+                  "kr": "몇 번이고",
+                  "yomi": "なんども"
+            },
+            {
+                  "jp": "何枚",
+                  "kr": "몇 매, 몇 장",
+                  "yomi": "なんまい"
+            },
+            {
+                  "jp": "にあう",
+                  "kr": "어울리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "におい",
+                  "kr": "냄새",
+                  "yomi": ""
+            },
+            {
+                  "jp": "にがい",
+                  "kr": "쓰다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "にげる",
+                  "kr": "도망가다, 벗어나다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "にけん",
+                  "kr": "두 채",
+                  "yomi": ""
+            },
+            {
+                  "jp": "西",
+                  "kr": "서쪽",
+                  "yomi": "にし"
+            },
+            {
+                  "jp": "にだい",
+                  "kr": "두 대",
+                  "yomi": ""
+            },
+            {
+                  "jp": "日記",
+                  "kr": "일기",
+                  "yomi": "にっき"
+            },
+            {
+                  "jp": "荷物",
+                  "kr": "짐",
+                  "yomi": "にもつ"
+            },
+            {
+                  "jp": "にる",
+                  "kr": "닮다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "にんき",
+                  "kr": "인기",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ぬぐ",
+                  "kr": "벗다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ねつ",
+                  "kr": "열",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ねっしんだ",
+                  "kr": "열심이다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ねぼう",
+                  "kr": "늦잠",
+                  "yomi": ""
+            },
+            {
+                  "jp": "眠い",
+                  "kr": "졸리다",
+                  "yomi": "ねむい"
+            },
+            {
+                  "jp": "眠る",
+                  "kr": "자다",
+                  "yomi": "ねむる"
+            }
+      ],
+      "day19": [
+            {
+                  "jp": "ねる",
+                  "kr": "자다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "のど",
+                  "kr": "목, 목구멍",
+                  "yomi": ""
+            },
+            {
+                  "jp": "飲む",
+                  "kr": "마시다",
+                  "yomi": "のむ"
+            },
+            {
+                  "jp": "のりかえる",
+                  "kr": "갈아타다, 환승하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "乗れる",
+                  "kr": "탈 수 있다",
+                  "yomi": "のれる"
+            },
+            {
+                  "jp": "パートタイム",
+                  "kr": "파트타임",
+                  "yomi": ""
+            },
+            {
+                  "jp": "売店",
+                  "kr": "매점",
+                  "yomi": "ばいてん"
+            },
+            {
+                  "jp": "はきやすい",
+                  "kr": "신기 편하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "運ぶ",
+                  "kr": "운반하다, 옮기다",
+                  "yomi": "はこぶ"
+            },
+            {
+                  "jp": "はさみ",
+                  "kr": "가위",
+                  "yomi": ""
+            },
+            {
+                  "jp": "始まる",
+                  "kr": "시작되다",
+                  "yomi": "はじまる"
+            },
+            {
+                  "jp": "始める",
+                  "kr": "시작하다",
+                  "yomi": "はじめる"
+            },
+            {
+                  "jp": "場所",
+                  "kr": "장소",
+                  "yomi": "ばしょ"
+            },
+            {
+                  "jp": "走る",
+                  "kr": "달리다",
+                  "yomi": "はしる"
+            },
+            {
+                  "jp": "はずかしい",
+                  "kr": "부끄럽다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "パソコン",
+                  "kr": "퍼스널 컴퓨터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "はたち",
+                  "kr": "스무 살",
+                  "yomi": ""
+            },
+            {
+                  "jp": "働く",
+                  "kr": "일하다",
+                  "yomi": "はたらく"
+            },
+            {
+                  "jp": "発音",
+                  "kr": "발음",
+                  "yomi": "はつおん"
+            },
+            {
+                  "jp": "はっきり",
+                  "kr": "똑똑히, 명확히",
+                  "yomi": ""
+            },
+            {
+                  "jp": "花",
+                  "kr": "꽃",
+                  "yomi": "はな"
+            },
+            {
+                  "jp": "話",
+                  "kr": "이야기",
+                  "yomi": "はなし"
+            },
+            {
+                  "jp": "母親",
+                  "kr": "모친, 어머니",
+                  "yomi": "ははおや"
+            },
+            {
+                  "jp": "早く",
+                  "kr": "일찍, 빨리",
+                  "yomi": "はやく"
+            }
+      ],
+      "day20": [
+            {
+                  "jp": "林",
+                  "kr": "숲",
+                  "yomi": "はやし"
+            },
+            {
+                  "jp": "はらう",
+                  "kr": "지불하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "春",
+                  "kr": "봄",
+                  "yomi": "はる"
+            },
+            {
+                  "jp": "はる",
+                  "kr": "붙이다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "バレーボール",
+                  "kr": "배구",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ばんぐみ",
+                  "kr": "프로그램",
+                  "yomi": ""
+            },
+            {
+                  "jp": "反対",
+                  "kr": "반대",
+                  "yomi": "はんたい"
+            },
+            {
+                  "jp": "ひえる",
+                  "kr": "차가워지다, 식다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "光",
+                  "kr": "빛",
+                  "yomi": "ひかり"
+            },
+            {
+                  "jp": "光る",
+                  "kr": "빛나다",
+                  "yomi": "ひかる"
+            },
+            {
+                  "jp": "ひきだし",
+                  "kr": "서랍",
+                  "yomi": ""
+            },
+            {
+                  "jp": "引く",
+                  "kr": "당기다, 끌다",
+                  "yomi": "ひく"
+            },
+            {
+                  "jp": "低い",
+                  "kr": "낮다",
+                  "yomi": "ひくい"
+            },
+            {
+                  "jp": "ひっこし",
+                  "kr": "이사",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ひっこす",
+                  "kr": "이사하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ひつようだ",
+                  "kr": "필요하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "病院",
+                  "kr": "병원",
+                  "yomi": "びょういん"
+            },
+            {
+                  "jp": "開く",
+                  "kr": "열리다",
+                  "yomi": "ひらく"
+            },
+            {
+                  "jp": "昼",
+                  "kr": "낮",
+                  "yomi": "ひる"
+            },
+            {
+                  "jp": "ビル",
+                  "kr": "빌딩",
+                  "yomi": ""
+            },
+            {
+                  "jp": "昼ご飯",
+                  "kr": "점심밥",
+                  "yomi": "ひるごはん"
+            },
+            {
+                  "jp": "昼ごろ",
+                  "kr": "정오 무렵",
+                  "yomi": "ひるごろ"
+            },
+            {
+                  "jp": "昼休み",
+                  "kr": "점심시간",
+                  "yomi": "ひるやすみ"
+            },
+            {
+                  "jp": "広い",
+                  "kr": "넓다",
+                  "yomi": "ひろい"
+            }
+      ],
+      "day21": [
+            {
+                  "jp": "ひろう",
+                  "kr": "줍다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "広場",
+                  "kr": "광장",
+                  "yomi": "ひろば"
+            },
+            {
+                  "jp": "ふかい",
+                  "kr": "깊다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "服",
+                  "kr": "옷",
+                  "yomi": "ふく"
+            },
+            {
+                  "jp": "太い",
+                  "kr": "굵다",
+                  "yomi": "ふと"
+            },
+            {
+                  "jp": "ふとる",
+                  "kr": "살찌다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "不便だ",
+                  "kr": "불편하다",
+                  "yomi": "ふべんだ"
+            },
+            {
+                  "jp": "ふまれる",
+                  "kr": "밟히다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "冬",
+                  "kr": "겨울",
+                  "yomi": "ふゆ"
+            },
+            {
+                  "jp": "古い",
+                  "kr": "오래되다, 낡다",
+                  "yomi": "ふるい"
+            },
+            {
+                  "jp": "プレゼント",
+                  "kr": "선물",
+                  "yomi": ""
+            },
+            {
+                  "jp": "文",
+                  "kr": "문장",
+                  "yomi": "ぶん"
+            },
+            {
+                  "jp": "文学",
+                  "kr": "문학",
+                  "yomi": "ぶんがく"
+            },
+            {
+                  "jp": "部屋",
+                  "kr": "방",
+                  "yomi": "へや"
+            },
+            {
+                  "jp": "勉強",
+                  "kr": "공부",
+                  "yomi": "べんきよう"
+            },
+            {
+                  "jp": "へんじ",
+                  "kr": "대답, 답장",
+                  "yomi": ""
+            },
+            {
+                  "jp": "便利だ",
+                  "kr": "편리하다",
+                  "yomi": "べんりだ"
+            },
+            {
+                  "jp": "ぼうえき",
+                  "kr": "무역",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ほうそう",
+                  "kr": "방송",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ホテル",
+                  "kr": "호텔",
+                  "yomi": ""
+            },
+            {
+                  "jp": "本屋",
+                  "kr": "서점",
+                  "yomi": "ほんや"
+            },
+            {
+                  "jp": "ほんやく",
+                  "kr": "번역",
+                  "yomi": ""
+            },
+            {
+                  "jp": "毎朝",
+                  "kr": "매일 아침",
+                  "yomi": "まいあさ"
+            },
+            {
+                  "jp": "まける",
+                  "kr": "지다",
+                  "yomi": ""
+            }
+      ],
+      "day22": [
+            {
+                  "jp": "まじめだ",
+                  "kr": "착실하다, 성실하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "または",
+                  "kr": "또는",
+                  "yomi": ""
+            },
+            {
+                  "jp": "町",
+                  "kr": "동네, 마을, 시내",
+                  "yomi": "まち"
+            },
+            {
+                  "jp": "待つ",
+                  "kr": "기다리다",
+                  "yomi": "まつ"
+            },
+            {
+                  "jp": "まっすぐ",
+                  "kr": "똑바로, 곧장",
+                  "yomi": ""
+            },
+            {
+                  "jp": "間に合う",
+                  "kr": "시간에 맞추다",
+                  "yomi": "まにあう"
+            },
+            {
+                  "jp": "短い",
+                  "kr": "짧다",
+                  "yomi": "みじかい"
+            },
+            {
+                  "jp": "店",
+                  "kr": "가게",
+                  "yomi": "みせ"
+            },
+            {
+                  "jp": "みつかる",
+                  "kr": "발견되다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "港",
+                  "kr": "항구",
+                  "yomi": "みなと"
+            },
+            {
+                  "jp": "むかえる",
+                  "kr": "맞이하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "村",
+                  "kr": "마을",
+                  "yomi": "むら"
+            },
+            {
+                  "jp": "目",
+                  "kr": "눈",
+                  "yomi": "め"
+            },
+            {
+                  "jp": "メートル",
+                  "kr": "미터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "めずらしい",
+                  "kr": "희귀하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "持つ",
+                  "kr": "들다, 지니다",
+                  "yomi": "もつ"
+            },
+            {
+                  "jp": "持てる",
+                  "kr": "들 수 있다",
+                  "yomi": "もてる"
+            },
+            {
+                  "jp": "もらう",
+                  "kr": "받다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "森",
+                  "kr": "숲",
+                  "yomi": "もり"
+            },
+            {
+                  "jp": "門",
+                  "kr": "문",
+                  "yomi": "もん"
+            },
+            {
+                  "jp": "問題",
+                  "kr": "문제",
+                  "yomi": "もんだい"
+            },
+            {
+                  "jp": "役",
+                  "kr": "역할, 구실",
+                  "yomi": "やく"
+            },
+            {
+                  "jp": "やくそく",
+                  "kr": "약속",
+                  "yomi": ""
+            }
+      ],
+      "day23": [
+            {
+                  "jp": "役に立つ",
+                  "kr": "도움이 되다",
+                  "yomi": "やくにたつ"
+            },
+            {
+                  "jp": "野菜",
+                  "kr": "채소",
+                  "yomi": "やさい"
+            },
+            {
+                  "jp": "安い",
+                  "kr": "싸다, 저렴하다",
+                  "yomi": "やすい"
+            },
+            {
+                  "jp": "やっと",
+                  "kr": "겨우",
+                  "yomi": ""
+            },
+            {
+                  "jp": "やっぱり",
+                  "kr": "역시",
+                  "yomi": ""
+            },
+            {
+                  "jp": "山道",
+                  "kr": "산길",
+                  "yomi": "やまみち"
+            },
+            {
+                  "jp": "やむ",
+                  "kr": "그치다, 멎다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "やめる",
+                  "kr": "멈다, 그만두다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "やわらかい",
+                  "kr": "부드럽다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "夕方",
+                  "kr": "저녁때",
+                  "yomi": "ゆうがた"
+            },
+            {
+                  "jp": "夕飯",
+                  "kr": "저녁밥",
+                  "yomi": "ゆうはん"
+            },
+            {
+                  "jp": "有名だ",
+                  "kr": "유명하다",
+                  "yomi": "ゆうめいだ"
+            },
+            {
+                  "jp": "雪",
+                  "kr": "눈",
+                  "yomi": "ゆき"
+            },
+            {
+                  "jp": "ゆしゅつ",
+                  "kr": "수출",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ゆっくり",
+                  "kr": "천천히",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ゆめ",
+                  "kr": "꿈",
+                  "yomi": ""
+            },
+            {
+                  "jp": "ゆれる",
+                  "kr": "흔들리다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "用意",
+                  "kr": "준비",
+                  "yomi": "ようい"
+            },
+            {
+                  "jp": "用事",
+                  "kr": "볼일, 용무",
+                  "yomi": "ようじ"
+            },
+            {
+                  "jp": "洋服",
+                  "kr": "양복, 옷",
+                  "yomi": "ようふく"
+            },
+            {
+                  "jp": "よく",
+                  "kr": "곧잘, 자주",
+                  "yomi": ""
+            },
+            {
+                  "jp": "よしゅう",
+                  "kr": "예습",
+                  "yomi": ""
+            },
+            {
+                  "jp": "予定",
+                  "kr": "예정",
+                  "yomi": "よてい"
+            },
+            {
+                  "jp": "よやく",
+                  "kr": "예약",
+                  "yomi": ""
+            }
+      ],
+      "day24": [
+            {
+                  "jp": "夜",
+                  "kr": "밤",
+                  "yomi": "よる"
+            },
+            {
+                  "jp": "よる",
+                  "kr": "돌보다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "よろこぶ",
+                  "kr": "기뻐하다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "弱い",
+                  "kr": "약하다",
+                  "yomi": "よわい"
+            },
+            {
+                  "jp": "来週",
+                  "kr": "다음 주",
+                  "yomi": "らいしゅう"
+            },
+            {
+                  "jp": "りゆう",
+                  "kr": "이유",
+                  "yomi": ""
+            },
+            {
+                  "jp": "利用",
+                  "kr": "이용",
+                  "yomi": "りよう"
+            },
+            {
+                  "jp": "料理",
+                  "kr": "요리",
+                  "yomi": "りょうり"
+            },
+            {
+                  "jp": "旅館",
+                  "kr": "여관",
+                  "yomi": "りょかん"
+            },
+            {
+                  "jp": "旅行",
+                  "kr": "여행",
+                  "yomi": "りょこう"
+            },
+            {
+                  "jp": "ルール",
+                  "kr": "룰, 규칙",
+                  "yomi": ""
+            },
+            {
+                  "jp": "るす",
+                  "kr": "집을 비움, 부재중",
+                  "yomi": ""
+            },
+            {
+                  "jp": "れいぼう",
+                  "kr": "냉방",
+                  "yomi": ""
+            },
+            {
+                  "jp": "レジ",
+                  "kr": "금전 출납계, 레지스터",
+                  "yomi": ""
+            },
+            {
+                  "jp": "レポート",
+                  "kr": "리포트",
+                  "yomi": ""
+            },
+            {
+                  "jp": "れんしゅう",
+                  "kr": "연습",
+                  "yomi": ""
+            },
+            {
+                  "jp": "れんらく",
+                  "kr": "연락",
+                  "yomi": ""
+            },
+            {
+                  "jp": "わかす",
+                  "kr": "끓이다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "別れる",
+                  "kr": "헤어지다",
+                  "yomi": "わかれる"
+            },
+            {
+                  "jp": "わく",
+                  "kr": "끓다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "わすれる",
+                  "kr": "잊다, 두고 오다",
+                  "yomi": ""
+            },
+            {
+                  "jp": "私",
+                  "kr": "저",
+                  "yomi": "わたくし"
+            },
+            {
+                  "jp": "悪い",
+                  "kr": "나쁘다",
+                  "yomi": "わるい"
+            },
+            {
+                  "jp": "われる",
+                  "kr": "깨지다",
+                  "yomi": ""
+            }
+      ]
+}
+
+    const quizTabBtn = document.getElementById("quizTabBtn");
+    const vocabTabBtn = document.getElementById("vocabTabBtn");
+    const wrongTabBtn = document.getElementById("wrongTabBtn");
+    const quizPanel = document.getElementById("quizPanel");
+    const vocabPanel = document.getElementById("vocabPanel");
+    const wrongPanel = document.getElementById("wrongPanel");
+    const daySelect = document.getElementById("daySelect");
+    const vocabDaySelect = document.getElementById("vocabDaySelect");
+    const modeSelect = document.getElementById("modeSelect");
+    const countSelect = document.getElementById("countSelect");
+    const startBtn = document.getElementById("startBtn");
+    const questionText = document.getElementById("questionText");
+    const readingText = document.getElementById("readingText");
+    const choices = document.getElementById("choices");
+    const resultText = document.getElementById("resultText");
+    const nextBtn = document.getElementById("nextBtn");
+    const revealAnswerBtn = document.getElementById("revealAnswerBtn");
+    const wrongTabClearBtn = document.getElementById("wrongTabClearBtn");
+    const showYomiCheckbox = document.getElementById("showYomiCheckbox");
+    const progressChip = document.getElementById("progressChip");
+    const scoreChip = document.getElementById("scoreChip");
+    const dayCountChip = document.getElementById("dayCountChip");
+    const wrongCountChip = document.getElementById("wrongCountChip");
+    const vocabList = document.getElementById("vocabList");
+    const wrongOnlyList = document.getElementById("wrongOnlyList");
+
+    const dayKeys = Object.keys(DATA);
+    let quizItems = [];
+    let currentIndex = 0;
+    let score = 0;
+    let answered = false;
+    let currentChoices = [];
+    let wrongItems = [];
+
+    function bindPress(el, handler) {
+      let touched = false;
+      el.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        touched = true;
+        handler(e);
+        setTimeout(() => { touched = false; }, 400);
+      }, { passive: false });
+      el.addEventListener("click", (e) => {
+        if (touched) return;
+        handler(e);
+      });
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function isKanji(ch) {
+      return /[一-龯々]/.test(ch);
+    }
+
+    function tokenizeWord(jp) {
+      const parts = [];
+      let current = "";
+      let currentType = null;
+      for (const ch of jp) {
+        const type = isKanji(ch) ? "kanji" : "other";
+        if (type !== currentType && current) {
+          parts.push({ type: currentType, text: current });
+          current = ch;
+          currentType = type;
+        } else {
+          current += ch;
+          currentType = type;
+        }
+      }
+      if (current) parts.push({ type: currentType, text: current });
+      return parts;
+    }
+
+    function rubyText(jp, yomi, visible) {
+      if (!visible || !yomi) return escapeHtml(jp);
+      if (![...jp].some(isKanji)) return escapeHtml(jp);
+
+      const parts = tokenizeWord(jp);
+      let cursor = 0;
+      let html = "";
+
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+
+        if (part.type === "other") {
+          html += escapeHtml(part.text);
+          const idx = yomi.indexOf(part.text, cursor);
+          if (idx !== -1) cursor = idx + part.text.length;
+          continue;
+        }
+
+        let nextOther = "";
+        for (let j = i + 1; j < parts.length; j++) {
+          if (parts[j].type === "other") {
+            nextOther = parts[j].text;
+            break;
+          }
+        }
+
+        let reading = "";
+        if (nextOther) {
+          const idx = yomi.indexOf(nextOther, cursor);
+          reading = idx === -1 ? yomi.slice(cursor) : yomi.slice(cursor, idx);
+          cursor = idx === -1 ? yomi.length : idx;
+        } else {
+          reading = yomi.slice(cursor);
+          cursor = yomi.length;
+        }
+
+        html += reading
+          ? `<ruby>${escapeHtml(part.text)}<rt>${escapeHtml(reading)}</rt></ruby>`
+          : escapeHtml(part.text);
+      }
+
+      return html;
+    }
+
+    function fillDaySelect(select) {
+      const previous = select.value || "all";
+      select.innerHTML = "";
+
+      const allCount = dayKeys.reduce((sum, day) => sum + (DATA[day] || []).length, 0);
+
+      const all = document.createElement("option");
+      all.value = "all";
+      all.textContent = `전체 (${allCount})`;
+      select.appendChild(all);
+
+      if (select.id === "daySelect") {
+        const wrongOnly = document.createElement("option");
+        wrongOnly.value = "wrongOnly";
+        wrongOnly.textContent = `오답만 (${wrongItems.length})`;
+        select.appendChild(wrongOnly);
+      }
+
+      dayKeys.forEach(day => {
+        const count = (DATA[day] || []).length;
+        const op = document.createElement("option");
+        op.value = day;
+        op.textContent = `${day.toUpperCase()} (${count})`;
+        select.appendChild(op);
+      });
+
+      const values = [...select.options].map(o => o.value);
+      select.value = values.includes(previous) ? previous : "all";
+    }
+
+    function getItems(selectedDay) {
+      if (selectedDay === "all") {
+        return dayKeys.flatMap(day => DATA[day].map(item => ({ ...item, day })));
+      }
+      if (selectedDay === "wrongOnly") {
+        return wrongItems.map(item => ({ ...item }));
+      }
+      return (DATA[selectedDay] || []).map(item => ({ ...item, day: selectedDay }));
+    }
+
+    function switchTab(tab) {
+      const isQuiz = tab === "quiz";
+      const isVocab = tab === "vocab";
+      const isWrong = tab === "wrong";
+      quizPanel.classList.toggle("active", isQuiz);
+      vocabPanel.classList.toggle("active", isVocab);
+      wrongPanel.classList.toggle("active", isWrong);
+      quizTabBtn.classList.toggle("active", isQuiz);
+      vocabTabBtn.classList.toggle("active", isVocab);
+      wrongTabBtn.classList.toggle("active", isWrong);
+      if (isVocab) renderVocab();
+      if (isWrong) renderWrongOnlyList();
+    }
+
+    function sameItem(a, b) {
+      return a.day === b.day && a.jp === b.jp && a.kr === b.kr;
+    }
+
+    function addWrongItem(item) {
+      if (!wrongItems.some(x => sameItem(x, item))) wrongItems.push(item);
+      renderWrongOnlyList();
+      updateStatus();
+    }
+
+    function buildWrongCards(targetEl) {
+      targetEl.innerHTML = "";
+      if (!wrongItems.length) {
+        targetEl.innerHTML = '<div class="empty">오답 없음</div>';
+        return;
+      }
+      wrongItems.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "wrong-item";
+        div.innerHTML = `
+          <div class="wrong-day">${item.day.toUpperCase()}</div>
+          <div class="wrong-jp">${rubyText(item.jp, item.yomi, true)}</div>
+          <div class="wrong-kr">${escapeHtml(item.kr)}</div>
+        `;
+        targetEl.appendChild(div);
+      });
+    }
+
+    function renderWrongOnlyList() {
+      buildWrongCards(wrongOnlyList);
+    }
+
+    function updateStatus() {
+      fillDaySelect(daySelect);
+      progressChip.textContent = `${quizItems.length ? Math.min(currentIndex + 1, quizItems.length) : 0} / ${quizItems.length}`;
+      scoreChip.textContent = `${score}점`;
+      const selected = daySelect.value || "all";
+      const currentCount = getItems(selected).length;
+      dayCountChip.textContent = `${currentCount}단어`;
+      wrongCountChip.textContent = `오답 ${wrongItems.length}개`;
+    }
+
+    function renderVocab() {
+      const items = getItems(vocabDaySelect.value);
+      vocabList.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "vocab-item";
+        div.innerHTML = `
+          <div class="vocab-day">${item.day.toUpperCase()}</div>
+          <div class="vocab-jp">${rubyText(item.jp, item.yomi, true)}</div>
+          <div class="vocab-kr">${escapeHtml(item.kr)}</div>
+        `;
+        vocabList.appendChild(div);
+      });
+      updateStatus();
+    }
+
+    function makeChoices(answerItem) {
+      if (modeSelect.value === "jpToKr") {
+        const pool = getItems(daySelect.value).filter(x => x.kr !== answerItem.kr);
+        const wrongs = shuffle(pool).slice(0, 3).map(x => ({ text: x.kr, correct: false }));
+        return shuffle([{ text: answerItem.kr, correct: true }, ...wrongs]);
+      } else {
+        const pool = getItems(daySelect.value).filter(x => x.jp !== answerItem.jp);
+        const wrongs = shuffle(pool).slice(0, 3).map(x => ({ text: x.jp, yomi: x.yomi, correct: false }));
+        return shuffle([{ text: answerItem.jp, yomi: answerItem.yomi, correct: true }, ...wrongs]);
+      }
+    }
+
+    function renderQuestion() {
+      choices.innerHTML = "";
+      resultText.textContent = "";
+      resultText.className = "result";
+      showYomiCheckbox.checked = false;
+
+      if (!quizItems.length) {
+        questionText.textContent = "시작";
+        readingText.textContent = "";
+        updateStatus();
+        return;
+      }
+
+      if (currentIndex >= quizItems.length) {
+        questionText.textContent = "완료";
+        readingText.textContent = `${score} / ${quizItems.length}`;
+        choices.innerHTML = "";
+        updateStatus();
+        return;
+      }
+
+      const item = quizItems[currentIndex];
+      answered = false;
+      currentChoices = makeChoices(item);
+
+      if (modeSelect.value === "jpToKr") {
+        questionText.innerHTML = rubyText(item.jp, item.yomi, false);
+      } else {
+        questionText.textContent = item.kr;
+      }
+      readingText.textContent = item.day.toUpperCase();
+
+      currentChoices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "choice secondary";
+        btn.type = "button";
+        btn.innerHTML = modeSelect.value === "jpToKr"
+          ? escapeHtml(choice.text)
+          : rubyText(choice.text, choice.yomi, false);
+
+        bindPress(btn, () => {
+          if (answered) return;
+          answered = true;
+
+          if (choice.correct) {
+            btn.classList.add("correct");
+            resultText.textContent = "정답";
+            resultText.className = "result good";
+            score += 1;
+          } else {
+            btn.classList.add("wrong");
+            resultText.textContent = "오답";
+            resultText.className = "result bad";
+            addWrongItem(item);
+          }
+
+          [...choices.children].forEach((el, idx) => {
+            if (currentChoices[idx].correct) el.classList.add("correct");
+          });
+
+          updateStatus();
+        });
+
+        choices.appendChild(btn);
+      });
+
+      updateStatus();
+    }
+
+    function startQuiz() {
+      const items = shuffle(getItems(daySelect.value));
+      const selectedCount = countSelect.value;
+      if (selectedCount === "all") {
+        quizItems = items;
+      } else {
+        const limit = Number(selectedCount);
+        quizItems = items.slice(0, limit);
+      }
+      currentIndex = 0;
+      score = 0;
+      renderQuestion();
+    }
+
+    function applyYomiState() {
+      if (!quizItems.length || currentIndex >= quizItems.length) return;
+      const item = quizItems[currentIndex];
+      const visible = showYomiCheckbox.checked;
+
+      if (modeSelect.value === "jpToKr") {
+        questionText.innerHTML = rubyText(item.jp, item.yomi, visible);
+      } else {
+        [...choices.children].forEach((btn, idx) => {
+          const choice = currentChoices[idx];
+          btn.innerHTML = rubyText(choice.text, choice.yomi, visible);
+        });
+      }
+    }
+
+    function revealAnswer() {
+      if (!quizItems.length || currentIndex >= quizItems.length || answered) return;
+      const item = quizItems[currentIndex];
+      const correctValue = modeSelect.value === "jpToKr" ? item.kr : item.jp;
+
+      [...choices.children].forEach((el, idx) => {
+        const choice = currentChoices[idx];
+        if (choice.text === correctValue) el.classList.add("correct");
+      });
+
+      addWrongItem(item);
+      resultText.textContent = "오답";
+      resultText.className = "result bad";
+      answered = true;
+    }
+
+    function nextQuestion() {
+      if (!quizItems.length) return;
+      if (!answered && currentIndex < quizItems.length) {
+        addWrongItem(quizItems[currentIndex]);
+        resultText.textContent = "미응답 오답 처리";
+        resultText.className = "result bad";
+      }
+      currentIndex += 1;
+      renderQuestion();
+    }
+
+    function clearWrong() {
+      wrongItems = [];
+      renderWrongOnlyList();
+      updateStatus();
+    }
+
+    bindPress(startBtn, startQuiz);
+    bindPress(quizTabBtn, () => switchTab("quiz"));
+    bindPress(vocabTabBtn, () => switchTab("vocab"));
+    bindPress(wrongTabBtn, () => switchTab("wrong"));
+    bindPress(nextBtn, nextQuestion);
+    bindPress(revealAnswerBtn, revealAnswer);
+    bindPress(wrongTabClearBtn, clearWrong);
+    showYomiCheckbox.addEventListener("change", applyYomiState);
+    daySelect.addEventListener("change", updateStatus);
+    countSelect.addEventListener("change", updateStatus);
+    vocabDaySelect.addEventListener("change", renderVocab);
+
+    fillDaySelect(daySelect);
+    fillDaySelect(vocabDaySelect);
+    renderVocab();
+    updateStatus();
+  </script>
+</body>
+</html>
